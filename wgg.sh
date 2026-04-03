@@ -1,20 +1,10 @@
 #!/bin/bash
-PEERFILE=/etc/wireguard/peers
-WGCOMMAND=$(which wg)
+
+AMNEZIABINARY=awg
+#[ -f /etc/openwrt_release ] && AMNEZIABINARY=awg || AMNEZIABINARY=amneziawg
 
 TPUT=$(which tput 2>/dev/null)
 [ -z $TPUT ] && TPUT=tputf
-
-# Make sure peer file exists
-if [[ ! -f "$PEERFILE" ]]; then
-  touch "$PEERFILE" 2>/dev/null
-
-  if [[ "$?" != "0" ]]; then
-    echo "Peer file $PEERFILE is not accesible by your user"
-
-    exit 0
-  fi
-fi
 
 function tputf() {
 
@@ -163,11 +153,20 @@ function echoLine() {
 }
 
 # What are we doing?
-while getopts ":up:" OPTION; do
+while getopts ":uawp:" OPTION; do
   case ${OPTION} in
-    u)  updatePeerFile
-        exit
+    u)  PEERUPDATE=1
         ;;
+    w)
+	PNAME=Wireguard
+        PEERFILE=/etc/wireguard/wgpeers
+        WGCOMMAND=$(which wg 2>/dev/null)
+	;;
+    a)
+	PNAME=AmneziaWG
+        PEERFILE=/etc/wireguard/awgpeers
+        WGCOMMAND=$(which $AMNEZIABINARY 2>/dev/null)
+	;;
     p)  PEERPK=${OPTARG}
         PEER=$(grep $PEERPK "$PEERFILE" 2> /dev/null | cut -d ':' -f2)
         [[ "$PEER" != "" ]] && echo "$PEER"
@@ -180,6 +179,27 @@ while getopts ":up:" OPTION; do
 done
 
 shift "$(( OPTIND - 1 ))"
+
+[ -z "$PNAME" ] && echo "Usage: $0 -a/w [ -u ] [ -p ]" && exit 1
+
+[ -z $WGCOMMAND ] && echo "$PNAME is not installed." && exit 1
+
+# Make sure peer file exists
+if [[ ! -f "$PEERFILE" ]]; then
+  touch "$PEERFILE" 2>/dev/null
+
+  if [[ "$?" != "0" ]]; then
+    echo "Peer file $PEERFILE is not accesible by your user"
+
+    exit 0
+  fi
+fi
+
+[ ! -z "$PEERUPDATE" ] && {
+	updatePeerFile 
+	exit 0
+}
+
 
 if [[ "$1" != "" ]]; then
 	DEVLIST=$1

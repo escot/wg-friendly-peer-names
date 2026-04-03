@@ -1,5 +1,7 @@
 #!/bin/bash
 
+GREENTIME=179
+
 AMNEZIABINARY=awg
 #[ -f /etc/openwrt_release ] && AMNEZIABINARY=awg || AMNEZIABINARY=amneziawg
 
@@ -108,7 +110,7 @@ function showConfiguration() {
       idle_seconds=$((${curdate}-${last_handshake}))
 
       # Choose color
-      if [[ $idle_seconds -lt 150 ]]; then
+      if [[ $idle_seconds -lt $GREENTIME ]]; then
         color=2 #green
       else if [[ $last_handshake -gt 0 ]]; then
              color=3 #yellow
@@ -153,7 +155,7 @@ function echoLine() {
 }
 
 # What are we doing?
-while getopts ":uawp:" OPTION; do
+while getopts ":uawp:g:" OPTION; do
   case ${OPTION} in
     u)  PEERUPDATE=1
         ;;
@@ -167,6 +169,9 @@ while getopts ":uawp:" OPTION; do
         PEERFILE=/etc/wireguard/awgpeers
         WGCOMMAND=$(which $AMNEZIABINARY 2>/dev/null)
 	;;
+    g)
+        GREENTIME=${OPTARG}
+        ;;
     p)  PEERPK=${OPTARG}
         PEER=$(grep $PEERPK "$PEERFILE" 2> /dev/null | cut -d ':' -f2)
         [[ "$PEER" != "" ]] && echo "$PEER"
